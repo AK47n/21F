@@ -23,12 +23,15 @@ STM32F103C8T6
 ## 项目结构
 
 ```
-├── code/               ← 应用层（PID控制、导航状态机、传感器）
-├── ml_libs/            ← STM32 外设驱动库
-├── sys/                ← CMSIS 系统文件
-├── user/               ← 入口文件 + Keil 工程
-├── det_uart.py         ← K230 端数字识别脚本
-└── 2021F_智能送药小车.pdf  ← 竞赛题目
+├── code/                       ← 应用层（PID控制、导航状态机、传感器）
+├── ml_libs/                    ← STM32 外设驱动库
+├── sys/                        ← CMSIS 系统文件
+├── user/                       ← 入口文件 + Keil 工程
+├── mp_deployment_source/       ← K230 模型部署文件（拷贝到 SD 卡）
+├── det_uart.py                 ← K230 端数字识别脚本
+├── CLAUDE.md                   ← AI 开发纲要（状态机、参数、调试指南）
+├── README.md                   ← 本文件
+└── 2021F_智能送药小车.pdf       ← 竞赛题目
 ```
 
 ## 编译与烧录
