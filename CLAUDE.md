@@ -75,6 +75,35 @@ K230 屏幕分辨率 1280×720，`cx` 和 `cy` 直接对应像素坐标。
 
 ---
 
+## K230 部署指南
+
+### 镜像烧录
+
+- **镜像下载**：[勘智开发者社区-资料下载](https://developer.canaan-creative.com/resource)，根据开发板型号选择对应版本的最新镜像
+- **Micropython Daily Build**：每日定时编译更新的固件，包含最新特性，请谨慎选择
+- **镜像烧录教程**：[烧录固件 — CanMV K230](https://developer.canaan-creative.com/k230_canmv_docs/zh/latest/zh/userguide/01_burning_image.html)
+
+### 上板运行
+
+镜像烧录完成后，连接开发板并接通电源，按以下步骤部署：
+
+1. 将以下文件拷贝到 `CanMV/sdcard/` 目录下：
+   - `*.kmodel` 模型文件
+   - `deploy_config.json` 模型配置
+   - `test.jpg` 测试图片（功能验证用）
+   - OCR 任务还需拷贝识别字典（本任务为数字识别，可忽略）
+2. 将编译生成的 `k230_bin` 目录下的 `elf` 可执行文件和 `ttf` 字体文件拷贝到 `CanMV/sdcard/` 目录下
+3. 执行部署脚本 `det_uart.py`（高度封装的视频推理部署脚本）
+
+**文件对应本项目：**
+| 文件 | 本项目路径 | 目标路径 |
+|------|-----------|----------|
+| 模型文件 | `mp_deployment_source/*.kmodel` | `CanMV/sdcard/mp_deployment_source/` |
+| 模型配置 | `mp_deployment_source/deploy_config.json` | `CanMV/sdcard/mp_deployment_source/` |
+| 部署脚本 | `det_uart.py` | `CanMV/sdcard/` |
+
+---
+
 ## 执行模型
 
 ```
