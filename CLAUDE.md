@@ -40,17 +40,17 @@ K230 屏幕分辨率 1280×720，`cx` 和 `cy` 直接对应像素坐标。
 ## 项目文件结构
 
 ```
-car_example/
+├── README.md                    ← 项目简介
 ├── CLAUDE.md                   ← 本文件（AI 开发纲要）
 ├── det_uart.py                 ← K230 端 Python 脚本
 ├── 2021F_智能送药小车.pdf       ← 竞赛题目
 ├── code/                       ← 应用层（★核心修改区★）
 │   ├── pid.c / pid.h           ← PID控制 + 全部导航状态机（主文件）
+│   ├── pid_debug.c             ← pid.c 的调试变体（参数可能不同，注意区分）
 │   ├── motor.c / motor.h       ← 电机 + 编码器驱动
 │   ├── gray_track.c / gray_track.h  ← 灰度传感器巡线 + 路口检测
 │   ├── digit_uart.c / digit_uart.h  ← K230 UART 协议解析
-│   ├── filter.c / filter.h     ← 卡尔曼 + Mahony 滤波器
-│   └── readme.txt
+│   └── filter.c / filter.h     ← 卡尔曼 + Mahony 滤波器
 ├── ml_libs/                    ← STM32 外设驱动库（少改）
 │   ├── ml_oled.c/h             ← OLED 128x64 I2C 驱动
 │   ├── ml_uart.c/h             ← UART 底层驱动
@@ -121,16 +121,6 @@ dest=3~8: {STRAIGHT, K230_DECIDE, NONE}  // 第1路口直行，第2路口K230决
 ### 路径记忆（path_memory）
 去程记录每个十字路口的动作，返程倒序读取并逆转（左↔右，直行不变）。
 
-### 路由表（route_table，pid.c）
-```c
-dest=1: {LEFT, NONE}
-dest=2: {RIGHT, NONE}
-dest=3~8: {STRAIGHT, K230_DECIDE, NONE}  // 第1路口直行，第2路口K230决策
-```
-
-### 路径记忆（path_memory）
-去程记录每个十字路口的动作，返程倒序读取并逆转（左↔右，直行不变）。
-
 ---
 
 ## 核心状态机（pid.c `pid_control()`）
@@ -150,7 +140,7 @@ dest=3~8: {STRAIGHT, K230_DECIDE, NONE}  // 第1路口直行，第2路口K230决
 
 ```
 CROSS_COOLDOWN 结束 → k230_approach_state=1 (Y-center逼近)
-  → 巡线 + 监控 K230 cy≈130
+  → 巡线 + 监控 K230 cy≈110（FAR_Y_CENTER）
   → 停车+识别 1秒 (k230_approach_state=2，停车即flush开窗口，不分两段)
   → 锁存决策 (k230_decision_ready=1, k230_saved_action)
   → 继续巡线等物理路口 (cross_detect)
@@ -164,7 +154,7 @@ CROSS_COOLDOWN 结束 → k230_approach_state=1 (Y-center逼近)
 - `k230_is_second_turn`: 标记当前转弯来自第2路口K230决策（用于左右转直行延迟区分）
 - `K230_RECOG_WINDOW = 100` (1000ms 识别窗口)
 - `FAR_Y_CENTER = 110` (Y-center阈值：第2路口/小T用，实测校准值)
-- `FAR_Y_CENTER_LARGE_T = 150` (★大T路口专用Y-center阈值，值越大触发停车越早)
+- `FAR_Y_CENTER_LARGE_T = 110` (大T路口专用Y-center阈值，与小T共用同一值)
 - `FAR_Y_TOLERANCE = 100` (Y坐标容差)
 - `FAR_Y_STABLE_CNT = 5` (稳定帧数 5×10ms=50ms)
 
@@ -202,7 +192,7 @@ FAR_SMALL_T_COOLDOWN   → ★巡线冷却不停车（与CROSS_COOLDOWN一致）
 - `far_small_realtime_calc()`: 小T识别窗口内实时计算左/右分配 + 转弯方向（纯读取，不修改状态）
 
 **关键参数：**
-- `FAR_Y_CENTER = 110`（第2路口/小T）, `FAR_Y_CENTER_LARGE_T = 150`（大T专用）, `FAR_Y_TOLERANCE = 100`, `FAR_Y_STABLE_CNT = 5`
+- `FAR_Y_CENTER = 110`（第2路口/小T/大T共用）, `FAR_Y_TOLERANCE = 100`, `FAR_Y_STABLE_CNT = 5`
 - `FAR_SCAN_DEG = 10.0f` (大T路口左转扫描Q3角度)
 - `FAR_RECOG_WINDOW = 100` (1000ms), `FAR_RECOG_WARMUP = 5` (预热帧数)
 - 转弯角度复用 `TURN_TARGET_DEG = 60.0f`（`FAR_TURN_TARGET_DEG = 70.0f` 已定义但未使用）
@@ -273,8 +263,8 @@ OLED_ShowStringBig(2, 1, oled_line2);
 
 ### 如果要在小T路口加新行为
 1. 在 `far_nav_control()` 的 `FAR_SMALL_T_*` 的 case 中添加状态
-2. 参数在 pid.c 第 346 行附近（`FAR_Y_CENTER` 等宏定义）
-3. OLED 大字显示在 pid.c 第 1260 行附近（`oled_line1/2` 构建区，`FMT8` 宏）
+2. 参数在 pid.c 第 52 行附近（`FAR_Y_CENTER` 等宏定义）
+3. OLED 大字显示在 pid.c 第 1313 行附近（`oled_line1/2` 构建区，`FMT8` 宏）
 
 ### 如果要在第2路口加新行为
 1. 修改 `k230_approach_state` 状态机（在 `CROSS_NORMAL` case 顶部）
@@ -353,7 +343,7 @@ dest 3~8 送药过程在第一个路口前使用 `FAST_BASE_SPEED`（默认 25.0
 - **过度依赖全白保底**：增大 `arrive_cnt` 阈值（当前3），或增大 `arrive_black_cnt` 递减阈值（当前5）使全白检测更严格
 - **速度过快冲过停车区**：减小 `RETURN_ARRIVE_SPEED_RATIO`（当前 0.40），如 0.30 或 0.25
 - **返程最后段太慢**：增大 `RETURN_ARRIVE_SPEED_RATIO`，如 0.50 或 0.60
-- **终点停车后又启动**：检查 `return_arrived` 锁存逻辑是否被意外清零（返程启动时在 pid.c:1578 行重置）
+- **终点停车后又启动**：检查 `return_arrived` 锁存逻辑是否被意外清零（返程启动时在 pid.c:1555 行重置）
 
 ### 常用模式（遵循现有代码风格）
 - 延时 = `static int cnt = N; if(--cnt <= 0) { ... }` (每周期减1, 10ms/周期)
@@ -369,16 +359,16 @@ dest 3~8 送药过程在第一个路口前使用 `FAST_BASE_SPEED`（默认 25.0
 |----|------|------|
 | `DEBUG_FORCE_DEST` | main.c:6 | 强制锁定目的地(1~8)，0=正常 |
 | `K230_DEBUG` | main.c:9 | 上电后显示K230原始检测数据 |
-| `DEBUG_TURN_ON_ALL_WHITE` | pid.c:1641 | 全白触发转弯（无场地时调试用） |
-| `DEBUG_STOP_AFTER_TURN` | pid.c:174 | 转弯完成后永久停车（观察角度） |
-| `GYRO_DAMP_GAIN` | pid.c:1130 | 陀螺前馈增益(0=关闭, 0.03~0.10推荐)，当前=0 |
-| `LINE_DEADBAND` | pid.c:1131 | 中心死区阈值(0~2)，越大越不敏感 |
-| `MOTOR_A_SCALE` | pid.c:117 | 左轮速度缩放(默认1.00，>1=补偿弱侧) |
-| `MOTOR_B_SCALE` | pid.c:118 | 右轮速度缩放(默认1.00，>1=补偿弱侧) |
-| `RETURN_ARRIVE_SPEED_RATIO` | pid.c:1133 | 返程最后路口→终点白线段降速比例(0.40=40%)，all_return_done后1秒生效 |
-| `YCENTER_SUPPRESS_CYCLES` | pid.c:364 | 转弯后进入巡线时Y-center抑制周期数(50×10ms=0.5s)，改0即关闭，CROSS_COOLDOWN和大T冷却结束时置此值 |
-| `FAST_BASE_SPEED` | pid.c:153 | dest 3~8 送药过程第一个路口前的高速基础速度(默认25.0，正常15.0)，仅送药过程生效，返程不变 |
-| `fast_approach` / `fast_approach_init_done` | pid.c:154-155 | 快速接近模式标志 + 一次性初始化标记（因定时器在car_started=1后才启动） |
+| `DEBUG_TURN_ON_ALL_WHITE` | pid.c:46 | 全白触发转弯（无场地时调试用） |
+| `DEBUG_STOP_AFTER_TURN` | pid.c:45 | 转弯完成后永久停车（观察角度） |
+| `GYRO_DAMP_GAIN` | pid.c:69 | 陀螺前馈增益(0=关闭, 0.03~0.10推荐)，当前=0 |
+| `LINE_DEADBAND` | pid.c:70 | 中心死区阈值(0~2)，越大越不敏感 |
+| `MOTOR_A_SCALE` | pid.c:22 | 左轮速度缩放(默认1.40，>1=补偿弱侧) |
+| `MOTOR_B_SCALE` | pid.c:23 | 右轮速度缩放(默认0.70，<1=抑制强侧) |
+| `RETURN_ARRIVE_SPEED_RATIO` | pid.c:72 | 返程最后路口→终点白线段降速比例(0.40=40%)，all_return_done后2秒(200帧)生效 |
+| `YCENTER_SUPPRESS_CYCLES` | pid.c:60 | 转弯后进入巡线时Y-center抑制周期数(25×10ms=0.25s)，改0即关闭，CROSS_COOLDOWN和大T冷却结束时置此值 |
+| `FAST_BASE_SPEED` | pid.c:31 | dest 3~8 送药过程第一个路口前的高速基础速度(默认25.0，正常15.0)，仅送药过程生效，返程不变 |
+| `fast_approach` / `fast_approach_init_done` | pid.c:114-115 | 快速接近模式标志 + 一次性初始化标记（因定时器在car_started=1后才启动） |
 
 ---
 
