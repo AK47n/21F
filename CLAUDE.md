@@ -44,6 +44,9 @@ K230 屏幕分辨率 1280×720，`cx` 和 `cy` 直接对应像素坐标。
 ├── CLAUDE.md                   ← 本文件（AI 开发纲要）
 ├── det_uart.py                 ← K230 端 Python 脚本
 ├── 2021F_智能送药小车.pdf       ← 竞赛题目
+├── mp_deployment_source/       ← K230 模型部署文件（拷贝到 SD 卡 /sdcard/）
+│   ├── deploy_config.json      ← 模型配置（8类数字，320×320，置信度0.4）
+│   └── *.kmodel                ← 训练好的 AnchorBaseDet 模型
 ├── code/                       ← 应用层（★核心修改区★）
 │   ├── pid.c / pid.h           ← PID控制 + 全部导航状态机（主文件）
 │   ├── pid_debug.c             ← pid.c 的调试变体（参数可能不同，注意区分）
