@@ -321,7 +321,7 @@ OLED_ShowStringBig(2, 1, oled_line2);
 ### 如果要修正巡线中心偏置（线不在传感器正中间）
 - 先确认偏移方向：线在 D5-D6 之间（偏右）说明右轮偏强/左轮偏弱，车有天然左转趋势
 - 线在 D3-D4 之间（偏左）说明左轮偏强/右轮偏弱，车有天然右转趋势
-- **左右轮速度缩放**：`MOTOR_A_SCALE` / `MOTOR_B_SCALE`（pid.c `motor_target_set` 上方，当前 A=1.40f / B=0.70f）
+- **左右轮速度缩放**：`MOTOR_A_SCALE` / `MOTOR_B_SCALE`（pid.c `motor_target_set` 上方，当前 A=1.40f / B=0.70f）根据车电机的力度自行调整
   - 线偏右 → 减小 `MOTOR_B_SCALE`（抑制右轮）或增大 `MOTOR_A_SCALE`（补偿左轮），如 `MOTOR_B_SCALE = 0.95f`
   - 线偏左 → 减小 `MOTOR_A_SCALE` 或增大 `MOTOR_B_SCALE`
   - 精细调整步长 0.01~0.02，观察线是否回到 D4-D5 之间
